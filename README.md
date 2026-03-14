@@ -1,131 +1,159 @@
 # Claviculario_v3
 
-Aplicação Flask para controle de empréstimo de chaves em ambiente escolar, com gerenciamento de usuários Admin/Comum, logs de sessões, relatórios em PDF e segurança CSRF.
+## 📝 Visão Geral
 
-## Requisitos
+`Claviculario_v3` é uma aplicação web em Python/Flask para controle de empréstimo de chaves em escolas ou instituições. Ela oferece:
 
-- Python 3.9 ou superior (testado em Python 3.13)
-- Git (opcional)
-- pacotes Python listados em `requirements.txt`
+- cadastro e aprovação de usuários (Admin/Comum)
+- empréstimo e devolução de chaves
+- histórico de movimentações
+- controle de sessões ativas e expiração
+- exportação de relatórios em PDF
+- painel de administração para gestão de usuários e chaves
 
-## Pré-configuração
+## 🚀 Recursos Principais
 
-1. Clonar o repositório:
+1. Autenticação segura (login/registro) com validação de e-mail e senha.
+2. Gerenciamento de usuários:
+   - Admin aprova/rejeita cadastros
+   - Admin bane e desbana usuários
+   - Admin cria usuários manualmente
+3. Gerenciamento de chaves:
+   - cadastrar, excluir, retirar e devolver
+   - status: Disponível, Em Uso, Pendente
+4. Histórico de movimentações com filtro por período.
+5. Relatório em PDF do histórico de empréstimos.
+6. Verificação de sessão por token (limite máximo por usuário e expiração automática).
 
-   ```bash
-   git clone <url-do-repositório>
-   cd claviculario_v3
-   ```
+## 📁 Estrutura do Projeto
 
-2. Criar ambiente virtual (recomendado):
+- `run.py` - inicializa a aplicação
+- `config.py` - configurações gerais (secret key, banco de dados)
+- `requirements.txt` - dependências Python
+- `app/`
+  - `__init__.py` - factory app, blueprints, sessão global
+  - `extensions.py` - instâncias `db`, `login_manager`, `csrf`
+  - `models.py` - definição de modelos: `Usuario`, `Chave`, `Movimentacao`, `SessaoAtiva`
+  - `auth/` - rotas de autenticação
+  - `admin/` - rotas de administração
+  - `chaves/` - rotas de controle de chaves
+  - `utils/pdf.py` - geração de relatório PDF
+- `templates/` - HTML das páginas (login, cadastro, painel, etc.)
+- `logs/` - logs da aplicação (se configurado)
 
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate     # Windows
-   source .venv/bin/activate  # macOS/Linux
-   ```
+## ⚙️ Instalação Rápida
 
-3. Atualize `requirements.txt` se desejar lock de versões específico.
+1. Clone o repositório:
 
-4. Instalar dependências:
-   ```bash
-   python -m pip install --upgrade pip
-   python -m pip install -r requirements.txt
-   ```
+```bash
+git clone <url-do-repositório>
+cd claviculario_v3
+```
 
-## Configuração de ambiente
+2. Crie e ative um ambiente virtual:
 
-A aplicação usa `config.Config` em `config.py`. Exemplo de campos:
+Windows:
 
-- `SECRET_KEY` - chave secreta do Flask (mantenha segura).
-- `SQLALCHEMY_DATABASE_URI` - string de conexão do banco (padrão SQLite `sqlite:///app.db`).
-- `SQLALCHEMY_TRACK_MODIFICATIONS=False`.
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
 
-Exemplo (padrão em `config.py`):
+Linux/macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+3. Instale dependências:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+## 🛠️ Configuração Básica
+
+Edite `config.py` conforme seu ambiente:
 
 ```python
 class Config:
-    SECRET_KEY = 'mudar_esta_chave'  # preferível usar variáveis de ambiente
+    SECRET_KEY = 'mudar_esta_chave'  # use variável de ambiente em produção
     SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    MAX_SESSOES_POR_USUARIO = 10
 ```
 
-Para usar variáveis de ambiente (Windows PowerShell):
+Ou configure via variáveis de ambiente:
 
 ```powershell
-$env:FLASK_APP='run.py'
-$env:SECRET_KEY='uma_chave_segura_aqui'
-$env:DATABASE_URL='sqlite:///app.db'
+setx FLASK_APP run.py
+setx SECRET_KEY 'secreta'
+setx DATABASE_URL 'sqlite:///app.db'
 ```
 
-## Inicialização
+## ▶️ Como Executar
 
-1. Criar tabelas e dados iniciais (apenas uma vez):
-   - Inicie o servidor e acesse `http://127.0.0.1:5000/setup`
-   - O endpoint adiciona um usuário Admin e um usuário Comum, e algumas chaves iniciais.
+1. Inicie a base de dados e dados iniciais (rodar uma única vez):
 
-2. Start do servidor:
+```bash
+python run.py
+```
 
-   ```bash
-   python run.py
-   ```
+Acesse no navegador:
 
-3. Acessar no navegador:
-   - `http://127.0.0.1:5000/`
+`http://127.0.0.1:5000/setup`
 
-4. Rotas principais:
-   - `/auth/login` - login
-   - `/auth/registrar` - registro
-   - `/admin` - painel de administração (Admin)
-   - `/chaves` - lista e controle de chaves
+2. Abra o sistema:
 
-## Usuários padrão gerados no setup
+`http://127.0.0.1:5000/`
+
+## 🔐 Credenciais Iniciais
+
+Após `/setup`, ficam disponíveis:
 
 - Admin: `admin@escola.com` / `Admin@123`
-- Comum: `joao@escola.com` / `Joao@123`
+- Usuário Comum: `joao@escola.com` / `Joao@123`
 
-## Banco de dados
+## 🧭 Rotas Principais
 
-Padrão usa SQLite (`app.db`) na raiz. Para mudar:
+- `/` → redireciona para painel
+- `/auth/login` → login
+- `/auth/registrar` → cadastro de usuário
+- `/auth/aguardando-aprovacao` → tela de espera até aprovação
+- `/auth/minhas-sessoes` → lista sessões ativas do usuário
+- `/chaves/painel` → painel de chaves e histórico
+- `/admin/usuarios` → gerenciamento Admin de usuários
+- `/setup` → inicializa banco e dados de exemplo
 
-1. Atualize `config.py` ou use `SQLALCHEMY_DATABASE_URI` com MySQL/PostgreSQL.
-2. Exemplo PostgreSQL:
+## 🧪 Testes e Verificações
 
-```python
-SQLALCHEMY_DATABASE_URI = 'postgresql://user:senha@localhost:5432/nome_do_banco'
-```
+- Login como Admin e Comum
+- Aprovar/Rejeitar/banir usuários
+- Cadastrar/Excluir chaves
+- Retirar/Devolver/Confirmar devolução
+- Filtrar histórico e exportar PDF
+- Checar expiração de sessão ao ficar inativo
 
-3. Execute `python run.py` e acesse `/setup` para criar esquema e registros iniciais.
+## ❗ Dicas de Operação
 
-## Estrutura de pastas
+- Use senha forte e variáveis de ambiente em produção.
+- Não deixe `SECRET_KEY` pública.
+- Use banco PostgreSQL/MySQL se for ambiente que não seja local.
+- Se usar SQLite, garanta permissão de escrita em `app.db`.
 
-- `app/`
-  - `__init__.py` - fábrica do Flask, blueprints, verificação de sessão
-  - `extensions.py` - instancia SQLAlchemy, LoginManager, CSRF
-  - `models.py` - definição de modelos `Usuario`, `Chave`, `SessaoAtiva`
-  - `auth/`, `admin/`, `chaves/` - blueprints e rotas
-  - `utils/pdf.py` - geração de PDF
-- `templates/` - layouts e telas (login, cadastro, chaves, admin)
-- `run.py` - inicia a aplicação
-- `config.py` - classe de configuração
+## 🛑 Problemas Comuns
 
-## Testes manuais
+- `sqlalchemy.exc.OperationalError`: string de conexão errada
+- `TemplateNotFound`: caminho errado no `template_folder` ou arquivos ausentes
+- `RuntimeError (working outside of request context)`: execute rotas via navegador/postman, não por shell
 
-- Faça login com Admin, crie, edite e exclua usuários/chaves
-- Simule timeout de sessão em `SessaoAtiva` e verifique logout automático
-- Geração de PDF (função em `app/utils/pdf.py`)
+## 📄 Licença e Contato
 
-## Problemas comuns
-
-- `sqlalchemy.exc.OperationalError` → verifique `SQLALCHEMY_DATABASE_URI`
-- `Working outside of application context` → certifique-se de usar `current_app` dentro da app
-- Erro ao criar ambiente virtual → use Python 3.9+ e reinstale dependências
-
-## Parar o servidor
-
-- No terminal em foreground: `Ctrl+C`
-- Se rodando em background no VS Code: clique em parar ou fechar terminal.
+- Projeto educativo/sem licença definida (insira `LICENSE` se quiser)
+- Mantido por: Alexandre Sampaio Rodrigues
 
 ---
 
-Mantido por: [Alexandre Sampaio Rodrigues]
+💡 Versão atualizada do README criada automaticamente pelo assistente.
