@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Nova Chave – Claviculário{% endblock %}
+
+{% block extra_styles %}
+.form-page-wrap { max-width: 520px; margin: 0 auto; }
+.form-page-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); overflow: hidden; }
+.form-card-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 14px; }
+.form-card-header-icon { width: 44px; height: 44px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; background: linear-gradient(135deg, var(--accent-success), #059669); color: #fff; box-shadow: 0 4px 12px rgba(var(--accent-success-rgb), 0.35); flex-shrink: 0; }
+.form-card-header h5 { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0 0 2px; }
+.form-card-header p { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+.form-card-body { padding: 28px; }
+.field-label { display: flex; align-items: center; gap: 7px; font-size: 0.83rem; font-weight: 600; color: var(--text-label); margin-bottom: 8px; }
+.field-label i { width: 16px; color: var(--accent-success); font-size: 0.78rem; }
+.quick-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.quick-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 500; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; transition: var(--transition-fast); user-select: none; }
+.quick-tag:hover { background: rgba(var(--accent-success-rgb), 0.1); border-color: rgba(var(--accent-success-rgb), 0.3); color: var(--accent-success); }
+.key-preview { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-md); background: rgba(var(--accent-success-rgb), 0.06); border: 1px solid rgba(var(--accent-success-rgb), 0.2); margin-top: 16px; transition: var(--transition); }
+.key-preview-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); background: rgba(var(--accent-success-rgb), 0.15); color: var(--accent-success); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.key-preview-info h6 { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin: 0 0 3px; }
+.key-preview-info small { font-size: 0.75rem; color: var(--accent-success); font-weight: 600; }
+.form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+{% endblock %}
+
+{% block content %}
+<div class="form-page-wrap" data-aos="fade-up">
+    <a href="{{ url_for('chaves.index') }}" class="btn-modern btn-modern-outline d-inline-flex mb-3" style="padding: 7px 14px; font-size: 0.82rem;">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    <div class="section-title mb-1">Cadastrar Nova Chave</div>
+    <div class="section-subtitle mb-4">Adicione uma nova chave ao sistema de controle</div>
+
+    <div class="form-page-card">
+        <div class="form-card-header">
+            <div class="form-card-header-icon"><i class="fas fa-key"></i></div>
+            <div>
+                <h5>Identificação da Chave</h5>
+                <p>A chave será criada automaticamente como "Disponível"</p>
+            </div>
+        </div>
+        <div class="form-card-body">
+            <form method="POST" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div>
+                    <label class="field-label" for="nomeChave"><i class="fas fa-tag"></i> Nome / Identificação</label>
+                    <input type="text" name="nome" id="nomeChave" class="form-control"
+                           placeholder="Ex: Laboratório de Química, Sala 302…"
+                           autocomplete="off" required oninput="updatePreview(this.value)">
+                    <div class="form-text">
+                        <i class="fas fa-lightbulb me-1" style="color: var(--accent-warning);"></i>
+                        Seja descritivo para facilitar a identificação
+                    </div>
+                    <div class="quick-tags">
+                        <span class="quick-tag" onclick="setExample(this)"><i class="fas fa-door-open"></i> Sala 101</span>
+                        <span class="quick-tag" onclick="setExample(this)"><i class="fas fa-flask"></i> Laboratório</span>
+                        <span class="quick-tag" onclick="setExample(this)"><i class="fas fa-car"></i> Veículo Fiat</span>
+                        <span class="quick-tag" onclick="setExample(this)"><i class="fas fa-desktop"></i> Sala de TI</span>
+                        <span class="quick-tag" onclick="setExample(this)"><i class="fas fa-archive"></i> Arquivo Geral</span>
+                        <span class="quick-tag" onclick="setExample(this)"><i class="fas fa-door-closed"></i> Auditório</span>
+                    </div>
+                </div>
+
+                <div class="key-preview" id="keyPreview" style="opacity: 0.4;">
+                    <div class="key-preview-icon"><i class="fas fa-key"></i></div>
+                    <div class="key-preview-info">
+                        <h6 id="previewName">Nome da Chave</h6>
+                        <small><i class="fas fa-circle" style="font-size:0.55rem;"></i> Disponível após cadastro</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-modern btn-modern-success w-100" style="height: 48px;">
+                        <i class="fas fa-plus-circle"></i> Cadastrar Chave
+                    </button>
+                    <a href="{{ url_for('chaves.index') }}" class="btn-modern btn-modern-outline w-100" style="height: 44px;">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updatePreview(val) {
+    const preview = document.getElementById('keyPreview');
+    const name = document.getElementById('previewName');
+    name.textContent = val.trim() || 'Nome da Chave';
+    preview.style.opacity = val.trim() ? '1' : '0.4';
+}
+function setExample(el) {
+    const text = el.textContent.trim();
+    const input = document.getElementById('nomeChave');
+    input.value = text;
+    updatePreview(text);
+    input.focus();
+}
+</script>
+{% endblock %}

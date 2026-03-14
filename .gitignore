@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# SQLite
+*.db
+app.db
+
+# Logs
+*.log
+
+# Mac
+.DS_Store
+
+# Web assets
+instance/
+coverage/
+htmlcov/
+
+# PyCharm
+*.iml
+
+# pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# pytest
+.cache/
+
+# Env vars
+.env

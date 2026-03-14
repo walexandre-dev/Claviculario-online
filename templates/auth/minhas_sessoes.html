@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Minhas Sessões – Claviculário{% endblock %}
+
+{% block extra_styles %}
+.sessions-wrap { max-width: 720px; margin: 0 auto; }
+.sessions-header { margin-bottom: 28px; }
+.sessions-header h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0 0 4px; }
+.sessions-header p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+.session-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 18px 20px; display: flex; align-items: center; gap: 16px; transition: var(--transition); margin-bottom: 12px; position: relative; overflow: hidden; }
+.session-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--border-color); transition: var(--transition); }
+.session-card.current::before { background: var(--accent-success); }
+.session-card.active-now::before { background: var(--accent-primary); }
+.session-card:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
+.session-device-icon { width: 46px; height: 46px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.session-device-icon.current { background: rgba(var(--accent-success-rgb), 0.12); color: var(--accent-success); }
+.session-device-icon.active { background: rgba(var(--accent-primary-rgb), 0.12); color: var(--accent-primary); }
+.session-device-icon.inactive { background: rgba(100, 116, 139, 0.1); color: var(--text-muted); }
+.session-info { flex: 1; min-width: 0; }
+.session-device-name { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 0.75rem; color: var(--text-muted); }
+.session-meta-item { display: flex; align-items: center; gap: 4px; }
+.session-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.current-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-pill); font-size: 0.7rem; font-weight: 700; background: rgba(var(--accent-success-rgb), 0.12); color: var(--accent-success); }
+.revoke-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; border: 1.5px solid rgba(var(--accent-danger-rgb), 0.25); background: rgba(var(--accent-danger-rgb), 0.08); color: var(--accent-danger); cursor: pointer; transition: var(--transition); }
+.revoke-btn:hover { background: var(--accent-danger); color: #fff; border-color: var(--accent-danger); }
+.sessions-summary { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.sessions-count { font-size: 0.9rem; color: var(--text-secondary); }
+.sessions-count strong { color: var(--text-primary); }
+.revoke-all-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; border: 1.5px solid rgba(var(--accent-warning-rgb), 0.3); background: rgba(var(--accent-warning-rgb), 0.08); color: var(--accent-warning); cursor: pointer; transition: var(--transition); }
+.revoke-all-btn:hover { background: var(--accent-warning); color: #fff; border-color: var(--accent-warning); }
+.empty-sessions { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+.expired-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 600; background: rgba(var(--accent-danger-rgb), 0.1); color: var(--accent-danger); }
+{% endblock %}
+
+{% block content %}
+<div class="sessions-wrap" data-aos="fade-up">
+
+    <div class="sessions-header">
+        <a href="{{ url_for('chaves.index') }}" class="btn-modern btn-modern-outline d-inline-flex mb-3" style="padding: 7px 14px; font-size: 0.82rem;">
+            <i class="fas fa-arrow-left"></i> Voltar ao Painel
+        </a>
+        <h1><i class="fas fa-shield-alt me-2" style="color: var(--accent-primary);"></i>Gerenciar Sessões</h1>
+        <p>Veja e controle todos os dispositivos conectados à sua conta</p>
+    </div>
+
+    <!-- Summary + Revoke All -->
+    <div class="sessions-summary" data-aos="fade-up" data-aos-delay="50">
+        <div class="sessions-count">
+            <strong>{{ sessoes|length }}</strong> dispositivo{{ 's' if sessoes|length != 1 else '' }} conectado{{ 's' if sessoes|length != 1 else '' }}
+        </div>
+        {% set other_count = sessoes|selectattr('token_sessao', 'ne', token_atual)|list|length %}
+        {% if other_count > 0 %}
+        <form action="{{ url_for('auth.revogar_todas_outras') }}" method="POST"
+              onsubmit="return confirm('Desconectar todos os outros {{ other_count }} dispositivo(s)?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="revoke-all-btn">
+                <i class="fas fa-power-off"></i>
+                Desconectar outros {{ other_count }} dispositivo{{ 's' if other_count != 1 else '' }}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Session Cards -->
+    {% if sessoes %}
+        {% for sessao in sessoes %}
+            {% set is_current = (sessao.token_sessao == token_atual) %}
+            {% set icon_class = 'current' if is_current else ('active' if sessao.esta_ativo_agora else 'inactive') %}
+            {% set card_class = 'current' if is_current else ('active-now' if sessao.esta_ativo_agora else '') %}
+
+            <div class="session-card {{ card_class }}" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
+
+                <div class="session-device-icon {{ icon_class }}">
+                    {% if 'android' in sessao.dispositivo|lower or 'mobile' in sessao.dispositivo|lower %}
+                        <i class="fas fa-mobile-alt"></i>
+                    {% elif 'iphone' in sessao.dispositivo|lower or 'ios' in sessao.dispositivo|lower %}
+                        <i class="fab fa-apple"></i>
+                    {% elif 'safari' in sessao.dispositivo|lower %}
+                        <i class="fab fa-safari"></i>
+                    {% elif 'firefox' in sessao.dispositivo|lower %}
+                        <i class="fab fa-firefox-browser"></i>
+                    {% elif 'chrome' in sessao.dispositivo|lower %}
+                        <i class="fab fa-chrome"></i>
+                    {% else %}
+                        <i class="fas fa-desktop"></i>
+                    {% endif %}
+                </div>
+
+                <div class="session-info">
+                    <div class="session-device-name">
+                        {{ sessao.dispositivo or 'Dispositivo desconhecido' }}
+                        {% if is_current %}
+                            <span class="current-badge ms-2"><span class="pulse-dot pulse-dot-success"></span> Este dispositivo</span>
+                        {% endif %}
+                        {% if sessao.is_expired %}
+                            <span class="expired-badge ms-1"><i class="fas fa-exclamation-circle"></i> Expirada</span>
+                        {% endif %}
+                    </div>
+                    <div class="session-meta">
+                        <span class="session-meta-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            {{ sessao.ip_address or '—' }}
+                        </span>
+                        <span class="session-meta-item">
+                            <i class="fas fa-clock"></i>
+                            Último acesso: {{ sessao.tempo_desde_acesso }}
+                        </span>
+                        <span class="session-meta-item">
+                            <i class="fas fa-calendar-plus"></i>
+                            Login: {{ sessao.criado_em.strftime('%d/%m/%Y %H:%M') if sessao.criado_em else '—' }}
+                        </span>
+                        <span class="session-meta-item">
+                            <i class="fas fa-hourglass-end"></i>
+                            Expira: {{ sessao.expira_em.strftime('%d/%m/%Y') if sessao.expira_em else '—' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="session-actions">
+                    {% if not is_current %}
+                    <form action="{{ url_for('auth.revogar_sessao', sessao_id=sessao.id) }}" method="POST"
+                          onsubmit="return confirm('Desconectar este dispositivo?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="revoke-btn" title="Desconectar">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="d-none d-sm-inline">Revogar</span>
+                        </button>
+                    </form>
+                    {% else %}
+                    <span style="font-size:0.75rem; color:var(--accent-success); padding: 7px 14px; display:flex; align-items:center; gap:5px;">
+                        <i class="fas fa-check-circle"></i> Sessão atual
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-sessions" data-aos="fade-up">
+            <i class="fas fa-shield-alt" style="font-size: 2.5rem; margin-bottom: 14px; opacity:0.3; display:block;"></i>
+            <p>Nenhuma sessão ativa encontrada.</p>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

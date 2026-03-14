@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+{% block title %}Painel de Controle – Claviculário{% endblock %}
+
+{% block extra_styles %}
+/* STATS */
+.stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px 22px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-sm); transition: var(--transition); overflow: hidden; position: relative; }
+.stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 50%; opacity: 0.06; transform: translate(20px, -20px); transition: var(--transition); }
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.stat-card:hover::before { transform: translate(10px, -10px) scale(1.3); }
+.stat-card.s-total::before { background: var(--accent-primary); }
+.stat-card.s-available::before { background: var(--accent-success); }
+.stat-card.s-inuse::before { background: var(--accent-danger); }
+.stat-card.s-pending::before { background: var(--accent-warning); }
+.stat-icon { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+.stat-icon.blue { background: rgba(var(--accent-primary-rgb), 0.12); color: var(--accent-primary); }
+.stat-icon.green { background: rgba(var(--accent-success-rgb), 0.12); color: var(--accent-success); }
+.stat-icon.red { background: rgba(var(--accent-danger-rgb), 0.12); color: var(--accent-danger); }
+.stat-icon.yellow { background: rgba(var(--accent-warning-rgb), 0.12); color: var(--accent-warning); }
+.stat-value { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* TABS */
+.tabs-header { display: flex; align-items: center; gap: 4px; background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 4px; width: fit-content; }
+.tab-btn { display: flex; align-items: center; gap: 7px; padding: 8px 18px; border-radius: calc(var(--radius-md) - 2px); font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); border: none; background: transparent; cursor: pointer; transition: var(--transition); }
+.tab-btn:hover { color: var(--text-primary); background: rgba(var(--accent-primary-rgb), 0.06); }
+.tab-btn.active { background: var(--bg-card); color: var(--accent-primary); box-shadow: var(--shadow-sm); }
+.tab-pane-custom { display: none; }
+.tab-pane-custom.active { display: block; animation: tabFadeIn 0.35s ease forwards; }
+@keyframes tabFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* SEARCH */
+.search-wrap { position: relative; flex: 1; max-width: 340px; }
+.search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none; }
+.search-input { width: 100%; padding: 10px 14px 10px 38px; background: var(--bg-card); border: 1.5px solid var(--border-input); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.875rem; transition: var(--transition); }
+.search-input:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12); }
+.search-input::placeholder { color: var(--text-muted); }
+
+/* KEYS GRID */
+.keys-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+@media (max-width: 576px) { .keys-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; } }
+.key-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 22px 18px 18px; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; transition: var(--transition); box-shadow: var(--shadow-sm); }
+.key-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; transition: var(--transition); transform: scaleX(0); transform-origin: center; }
+.key-card.available::after { background: var(--accent-success); }
+.key-card.in-use::after { background: var(--accent-danger); }
+.key-card.pending::after { background: var(--accent-warning); }
+.key-card:hover { transform: translateY(-5px); border-color: rgba(var(--accent-primary-rgb), 0.2); box-shadow: var(--shadow-lg); }
+.key-card:hover::after { transform: scaleX(1); }
+.key-status-badge { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+.key-status-badge.available { background: rgba(var(--accent-success-rgb), 0.12); color: var(--accent-success); }
+.key-status-badge.in-use { background: rgba(var(--accent-danger-rgb), 0.12); color: var(--accent-danger); }
+.key-status-badge.pending { background: rgba(var(--accent-warning-rgb), 0.12); color: var(--accent-warning); }
+.key-delete-btn { position: absolute; top: 12px; left: 12px; width: 28px; height: 28px; border-radius: var(--radius-sm); background: transparent; border: 1px solid transparent; color: var(--text-muted); cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; opacity: 0; }
+.key-card:hover .key-delete-btn { opacity: 1; }
+.key-delete-btn:hover { background: rgba(var(--accent-danger-rgb), 0.12); border-color: rgba(var(--accent-danger-rgb), 0.3); color: var(--accent-danger); }
+.key-icon-wrap { width: 60px; height: 60px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin: 6px 0 14px; transition: var(--transition); }
+.key-card:hover .key-icon-wrap { transform: scale(1.08) rotate(-5deg); }
+.key-icon-wrap.available { background: rgba(var(--accent-success-rgb), 0.1); color: var(--accent-success); }
+.key-icon-wrap.in-use { background: rgba(var(--accent-danger-rgb), 0.1); color: var(--accent-danger); }
+.key-icon-wrap.pending { background: rgba(var(--accent-warning-rgb), 0.1); color: var(--accent-warning); }
+.key-name { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.key-user-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px; }
+.key-user-name { font-size: 0.82rem; font-weight: 600; color: var(--accent-danger); }
+.key-action-btn { width: 100%; margin-top: 14px; padding: 9px; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 700; border: none; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-retirar { background: rgba(var(--accent-success-rgb), 0.1); color: var(--accent-success); border: 1.5px solid rgba(var(--accent-success-rgb), 0.25); }
+.btn-retirar:hover { background: var(--accent-success); color: #fff; border-color: var(--accent-success); box-shadow: var(--shadow-glow-green); }
+.btn-devolver { background: rgba(var(--accent-danger-rgb), 0.1); color: var(--accent-danger); border: 1.5px solid rgba(var(--accent-danger-rgb), 0.25); }
+.btn-devolver:hover { background: var(--accent-danger); color: #fff; border-color: var(--accent-danger); box-shadow: var(--shadow-glow-red); }
+.btn-confirmar { background: linear-gradient(135deg, var(--accent-primary), #6366f1); color: #fff; border: none; box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb), 0.3); }
+.btn-confirmar:hover { transform: translateY(-1px); box-shadow: var(--shadow-glow-blue); }
+.btn-aguardando { background: var(--bg-tertiary); color: var(--text-muted); border: 1.5px solid var(--border-color); cursor: not-allowed; opacity: 0.7; }
+
+/* FILTER */
+.filter-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.btn-filter { height: 42px; padding: 0 18px; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 600; border: none; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 7px; }
+.btn-filter-primary { background: linear-gradient(135deg, var(--accent-primary), #6366f1); color: #fff; box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb), 0.3); }
+.btn-filter-primary:hover { transform: translateY(-1px); }
+.btn-filter-danger { background: linear-gradient(135deg, var(--accent-danger), #b91c1c); color: #fff; }
+.btn-filter-danger:hover { transform: translateY(-1px); }
+.btn-filter-outline { background: var(--bg-tertiary); color: var(--text-secondary); border: 1.5px solid var(--border-color); }
+.btn-filter-outline:hover { background: var(--border-color); color: var(--text-primary); }
+.history-table-wrap { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-state i { font-size: 2.5rem; margin-bottom: 14px; opacity: 0.35; display: block; }
+.dash-header { margin-bottom: 28px; }
+.dash-header h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0 0 2px; letter-spacing: -0.3px; }
+.dash-header p { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="dash-header" data-aos="fade-down">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <h1><i class="fas fa-th-large me-2" style="color: var(--accent-primary);"></i>Painel de Controle</h1>
+            <p>Gerencie todas as chaves e movimentações em um só lugar</p>
+        </div>
+        <div class="search-wrap">
+            <input type="text" class="search-input" id="searchInput" placeholder="Buscar chave…">
+            <i class="fas fa-search"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+{% set total = chaves|length %}
+{% set disponivel = chaves|selectattr('status', 'equalto', 'Disponivel')|list|length %}
+{% set em_uso = chaves|selectattr('status', 'equalto', 'Em Uso')|list|length %}
+{% set pendente = chaves|selectattr('status', 'equalto', 'Pendente')|list|length %}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3" data-aos="fade-up" data-aos-delay="0">
+        <div class="stat-card s-total">
+            <div class="stat-icon blue"><i class="fas fa-key"></i></div>
+            <div>
+                <div class="stat-value count-up" data-target="{{ total }}">{{ total }}</div>
+                <div class="stat-label">Total de Chaves</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3" data-aos="fade-up" data-aos-delay="60">
+        <div class="stat-card s-available">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div>
+                <div class="stat-value count-up" data-target="{{ disponivel }}">{{ disponivel }}</div>
+                <div class="stat-label">Disponíveis</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3" data-aos="fade-up" data-aos-delay="120">
+        <div class="stat-card s-inuse">
+            <div class="stat-icon red"><i class="fas fa-user-clock"></i></div>
+            <div>
+                <div class="stat-value count-up" data-target="{{ em_uso }}">{{ em_uso }}</div>
+                <div class="stat-label">Em Uso</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3" data-aos="fade-up" data-aos-delay="180">
+        <div class="stat-card s-pending">
+            <div class="stat-icon yellow"><i class="fas fa-hourglass-half"></i></div>
+            <div>
+                <div class="stat-value count-up" data-target="{{ pendente }}">{{ pendente }}</div>
+                <div class="stat-label">Pendentes</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4" data-aos="fade-up" data-aos-delay="80">
+    <div class="tabs-header">
+        <button class="tab-btn {{ 'active' if tab_ativa == 'chaves' else '' }}" id="tab-chaves" onclick="switchTab('chaves')">
+            <i class="fas fa-key"></i> Chaves
+        </button>
+        <button class="tab-btn {{ 'active' if tab_ativa == 'historico' else '' }}" id="tab-historico" onclick="switchTab('historico')">
+            <i class="fas fa-history"></i> Histórico
+        </button>
+    </div>
+</div>
+
+<!-- TAB: CHAVES -->
+<div class="tab-pane-custom {{ 'active' if tab_ativa == 'chaves' else '' }}" id="pane-chaves">
+    <div class="keys-grid" id="keysGrid">
+        {% for chave in chaves %}
+        {% set sc = 'available' if chave.status == 'Disponivel' else ('in-use' if chave.status == 'Em Uso' else 'pending') %}
+        <div class="key-card {{ sc }} key-card-container" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 40 }}">
+
+            {% if current_user.is_admin and chave.status == 'Disponivel' %}
+            <form action="{{ url_for('chaves.excluir_chave', chave_id=chave.id) }}" method="POST"
+                  onsubmit="return confirm('Excluir a chave \'{{ chave.nome }}\' permanentemente?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="key-delete-btn" title="Excluir chave">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </form>
+            {% endif %}
+
+            <div class="key-status-badge {{ sc }}">
+                {% if chave.status == 'Disponivel' %}
+                    <span class="pulse-dot pulse-dot-success"></span> Disponível
+                {% elif chave.status == 'Em Uso' %}
+                    <span class="pulse-dot pulse-dot-danger"></span> Em Uso
+                {% else %}
+                    <span class="pulse-dot pulse-dot-warning"></span> Pendente
+                {% endif %}
+            </div>
+
+            <div class="key-icon-wrap {{ sc }}"><i class="fas fa-key"></i></div>
+            <div class="key-name key-name-text">{{ chave.nome }}</div>
+
+            {% if chave.status == 'Em Uso' %}
+                <div class="key-user-label">Retirado por</div>
+                <div class="key-user-name">{{ mov_ativas.get(chave.id, '—') }}</div>
+            {% elif chave.status == 'Pendente' %}
+                <div class="key-user-label" style="color: var(--accent-warning);">Aguardando admin</div>
+            {% else %}
+                <div class="key-user-label" style="color: var(--accent-success);">Livre para retirar</div>
+            {% endif %}
+
+            {% if chave.status == 'Disponivel' %}
+                <form action="{{ url_for('chaves.retirar', chave_id=chave.id) }}" method="POST" style="width:100%;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="key-action-btn btn-retirar">
+                        <i class="fas fa-hand-holding"></i> Retirar
+                    </button>
+                </form>
+            {% elif chave.status == 'Em Uso' %}
+                <form action="{{ url_for('chaves.devolver', chave_id=chave.id) }}" method="POST" style="width:100%;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="key-action-btn btn-devolver">
+                        <i class="fas fa-undo-alt"></i> Devolver
+                    </button>
+                </form>
+            {% elif chave.status == 'Pendente' %}
+                {% if current_user.is_admin %}
+                    <form action="{{ url_for('chaves.confirmar', chave_id=chave.id) }}" method="POST" style="width:100%;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="key-action-btn btn-confirmar">
+                            <i class="fas fa-check-double"></i> Confirmar
+                        </button>
+                    </form>
+                {% else %}
+                    <button class="key-action-btn btn-aguardando" disabled>
+                        <i class="fas fa-hourglass-half"></i> Aguardando
+                    </button>
+                {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="noResults" class="empty-state d-none">
+        <i class="fas fa-search"></i>
+        <p>Nenhuma chave encontrada para "<span id="searchQuery"></span>"</p>
+    </div>
+
+    {% if not chaves %}
+    <div class="empty-state">
+        <i class="fas fa-key"></i>
+        <p>Nenhuma chave cadastrada ainda.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- TAB: HISTÓRICO -->
+<div class="tab-pane-custom {{ 'active' if tab_ativa == 'historico' else '' }}" id="pane-historico">
+    <div class="filter-card" data-aos="fade-up">
+        <form method="GET" action="{{ url_for('chaves.index') }}" id="filterForm">
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-4">
+                    <label class="form-label"><i class="fas fa-calendar-alt me-1" style="color: var(--accent-primary);"></i>Data Início</label>
+                    <input type="date" name="data_inicio" class="form-control" style="height:42px;" value="{{ request.args.get('data_inicio', '') }}" required>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label"><i class="fas fa-calendar-check me-1" style="color: var(--accent-primary);"></i>Data Fim</label>
+                    <input type="date" name="data_fim" class="form-control" style="height:42px;" value="{{ request.args.get('data_fim', '') }}" required>
+                </div>
+                <div class="col-sm-4">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn-filter btn-filter-primary flex-grow-1">
+                            <i class="fas fa-filter"></i> Filtrar
+                        </button>
+                        <button type="button" onclick="abrirPDF()" class="btn-filter btn-filter-danger no-transition" title="Exportar PDF">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                        {% if request.args.get('data_inicio') %}
+                        <a href="{{ url_for('chaves.index') }}" class="btn-filter btn-filter-outline" title="Limpar">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="history-table-wrap" data-aos="fade-up" data-aos-delay="50">
+        <div class="table-responsive">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-key me-2" style="color:var(--accent-primary);opacity:0.6;"></i>Chave</th>
+                        <th><i class="fas fa-user me-2" style="opacity:0.6;"></i>Quem Retirou</th>
+                        <th><i class="fas fa-arrow-up me-2" style="color:var(--accent-danger);opacity:0.6;"></i>Retirada</th>
+                        <th><i class="fas fa-arrow-down me-2" style="color:var(--accent-success);opacity:0.6;"></i>Devolução</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mov in historico %}
+                    <tr>
+                        <td class="fw-semibold">
+                            {% if mov.chave %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:28px;height:28px;border-radius:6px;background:rgba(var(--accent-primary-rgb),0.1);display:flex;align-items:center;justify-content:center;color:var(--accent-primary);font-size:0.7rem;flex-shrink:0;">
+                                        <i class="fas fa-key"></i>
+                                    </div>
+                                    {{ mov.chave.nome }}
+                                </div>
+                            {% else %}
+                                <span style="color:var(--text-muted);font-style:italic;font-size:0.85rem;">Chave Excluída</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent-primary),#818cf8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.65rem;font-weight:700;flex-shrink:0;">
+                                    {{ mov.usuario_nome[0].upper() if mov.usuario_nome else '?' }}
+                                </div>
+                                <span style="font-size:0.875rem;">{{ mov.usuario_nome or '—' }}</span>
+                            </div>
+                        </td>
+                        <td style="font-size:0.85rem;color:var(--text-secondary);">
+                            {{ mov.data_retirada.strftime('%d/%m/%Y') }}<br>
+                            <small style="color:var(--text-muted);">{{ mov.data_retirada.strftime('%H:%M') }}</small>
+                        </td>
+                        <td style="font-size:0.85rem;color:var(--text-secondary);">
+                            {% if mov.data_devolucao %}
+                                {{ mov.data_devolucao.strftime('%d/%m/%Y') }}<br>
+                                <small style="color:var(--text-muted);">{{ mov.data_devolucao.strftime('%H:%M') }}</small>
+                            {% else %}
+                                <span style="color:var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if mov.data_devolucao %}
+                                <span class="badge-modern badge-secondary"><i class="fas fa-check-circle"></i> Concluído</span>
+                            {% else %}
+                                <span class="badge-modern badge-info"><i class="fas fa-circle-notch fa-spin"></i> Em Aberto</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>Nenhum registro encontrado neste período.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    window.switchTab = function(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane-custom').forEach(p => p.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.getElementById('pane-' + tab).classList.add('active');
+    };
+
+    const searchInput = document.getElementById('searchInput');
+    const noResults   = document.getElementById('noResults');
+    const searchQuery = document.getElementById('searchQuery');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase().trim();
+            const cards  = document.querySelectorAll('.key-card-container');
+            let visible  = 0;
+            cards.forEach(card => {
+                const name = card.querySelector('.key-name-text')?.textContent?.toLowerCase() || '';
+                const show = !filter || name.includes(filter);
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            if (noResults) {
+                noResults.classList.toggle('d-none', visible > 0 || !filter);
+                if (searchQuery) searchQuery.textContent = this.value;
+            }
+        });
+    }
+
+    // Counter animation
+    function animateCounter(el) {
+        const target = parseInt(el.getAttribute('data-target'), 10);
+        if (isNaN(target) || target === 0) return;
+        const dur = 800;
+        const t0  = performance.now();
+        function update(t) {
+            const p = Math.min((t - t0) / dur, 1);
+            const e = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(e * target);
+            if (p < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const c = entry.target.querySelector('.count-up');
+                if (c) animateCounter(c);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('.stat-card').forEach(c => observer.observe(c));
+
+    window.abrirPDF = function() {
+        const di = document.querySelector('input[name="data_inicio"]').value;
+        const df = document.querySelector('input[name="data_fim"]').value;
+        let url = "{{ url_for('chaves.exportar_pdf') }}";
+        if (di && df) url += `?data_inicio=${di}&data_fim=${df}`;
+        window.open(url, '_blank');
+    };
+})();
+</script>
+{% endblock %}

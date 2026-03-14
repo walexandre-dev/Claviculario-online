@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Aguardando Aprovação – Claviculário{% endblock %}
+
+{% block extra_styles %}
+body { background: var(--bg-primary); }
+.waiting-wrapper { min-height: calc(100vh - 70px); display: flex; align-items: center; justify-content: center; padding: 40px 16px; }
+.waiting-card { width: 100%; max-width: 480px; background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-xl); overflow: hidden; animation: cardPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+@keyframes cardPop { from { opacity: 0; transform: translateY(30px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.waiting-icon-wrap { padding: 48px 32px 32px; text-align: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); position: relative; }
+.waiting-icon-wrap::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245, 158, 11, 0.15), transparent); }
+.waiting-animated-icon { width: 80px; height: 80px; border-radius: 50%; background: rgba(245, 158, 11, 0.15); border: 2px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fbbf24; margin: 0 auto 20px; position: relative; }
+.waiting-animated-icon::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid rgba(245, 158, 11, 0.2); animation: pulseRing 2s ease-in-out infinite; }
+@keyframes pulseRing { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 0.1; } }
+.waiting-icon-wrap h2 { color: #fff; font-size: 1.4rem; font-weight: 700; margin: 0 0 6px; position: relative; }
+.waiting-icon-wrap p { color: rgba(255,255,255,0.5); font-size: 0.85rem; margin: 0; position: relative; }
+.waiting-body { padding: 32px; }
+.info-step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border-color); }
+.info-step:last-child { border-bottom: none; }
+.step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+.step-num.done { background: rgba(var(--accent-success-rgb), 0.15); color: var(--accent-success); }
+.step-num.pending { background: rgba(var(--accent-warning-rgb), 0.15); color: var(--accent-warning); }
+.step-num.wait { background: rgba(100, 116, 139, 0.12); color: var(--text-muted); }
+.step-info h6 { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin: 0 0 3px; }
+.step-info p { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+.waiting-footer { padding: 20px 32px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+.main-wrapper { padding: 0; }
+{% endblock %}
+
+{% block content %}
+<div class="waiting-wrapper">
+    <div class="waiting-card">
+        <div class="waiting-icon-wrap">
+            <div class="waiting-animated-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <h2>Conta em Análise</h2>
+            <p>Olá, <strong style="color:#fbbf24;">{{ current_user.nome.split()[0] }}</strong>! Seu cadastro está pendente de aprovação.</p>
+        </div>
+
+        <div class="waiting-body">
+            <div class="info-step">
+                <div class="step-num done"><i class="fas fa-check"></i></div>
+                <div class="step-info">
+                    <h6>Cadastro Realizado</h6>
+                    <p>Sua conta foi criada com sucesso em {{ current_user.criado_em.strftime('%d/%m/%Y às %H:%M') }}.</p>
+                </div>
+            </div>
+            <div class="info-step">
+                <div class="step-num pending"><i class="fas fa-clock"></i></div>
+                <div class="step-info">
+                    <h6>Aguardando Aprovação do Admin</h6>
+                    <p>Um administrador irá analisar e aprovar seu acesso em breve.</p>
+                </div>
+            </div>
+            <div class="info-step">
+                <div class="step-num wait"><i class="fas fa-lock-open"></i></div>
+                <div class="step-info">
+                    <h6>Acesso Liberado</h6>
+                    <p>Após aprovação você poderá usar o sistema completo.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="waiting-footer">
+            <a href="{{ url_for('auth.login') }}" class="btn-modern btn-modern-outline" style="flex:1; height:44px;">
+                <i class="fas fa-refresh"></i> Verificar Novamente
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="btn-modern btn-modern-danger" style="flex:1; height:44px;">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
