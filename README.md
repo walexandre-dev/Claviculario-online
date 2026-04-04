@@ -155,5 +155,3 @@ Após `/setup`, ficam disponíveis:
 - Mantido por: Alexandre Sampaio Rodrigues
 
 ---
-
-💡 Versão atualizada do README criada automaticamente pelo assistente.
