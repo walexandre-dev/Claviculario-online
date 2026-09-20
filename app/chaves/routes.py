@@ -1,23 +1,19 @@
-from functools import wraps
 from datetime import datetime, timedelta
+from functools import wraps
 
-from flask import (
-    render_template, request, redirect, url_for, flash,
-    make_response
-)
-from flask_login import login_required, current_user
+from flask import flash, make_response, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 from app.chaves import bp
 from app.extensions import db
 from app.models import Chave, Movimentacao
-
 
 # ─── Decorator: conta ativa ───────────────────────────────────────────────
 
 def active_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not current_user.is_active:
+        if not current_user.aprovado:
             return redirect(url_for('auth.aguardando_aprovacao'))
         return f(*args, **kwargs)
     return decorated

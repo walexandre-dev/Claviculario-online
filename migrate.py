@@ -4,8 +4,8 @@ Script de migração para quem já tem um banco.db do sistema MVP.
 Lê o banco antigo (banco.db) e escreve os dados no novo banco (banco_v3.db).
 Execute: python migrate.py
 """
-import sqlite3
 import os
+import sqlite3
 
 OLD_DB = 'instance/banco.db'
 NEW_DB = 'instance/banco_v3.db'
@@ -16,9 +16,10 @@ def migrate():
         print(f"[!] Banco antigo não encontrado em {OLD_DB}. Nada a migrar.")
         return
 
-    from run import app
-    from app.models import Usuario, Chave, Movimentacao, db
     from werkzeug.security import generate_password_hash
+
+    from app.models import Chave, Movimentacao, Usuario, db
+    from run import app
 
     with app.app_context():
         db.create_all()
@@ -37,7 +38,7 @@ def migrate():
                     # Gerar hash seguro com senha padrão (usuário deve redefinir)
                     senha_hash=generate_password_hash(row['senha'] if 'senha' in row.keys() else 'Temp@1234'),
                     tipo=row['tipo'] or 'Comum',
-                    is_active=True  # usuários existentes são aprovados
+                    aprovado=True  # usuários existentes são aprovados
                 )
                 db.session.add(u)
                 usuarios_migrados += 1
@@ -67,7 +68,7 @@ def migrate():
         db.session.commit()
         old.close()
 
-        print(f"[✅] Migração concluída!")
+        print("[✅] Migração concluída!")
         print(f"     Usuários: {usuarios_migrados}")
         print(f"     Chaves:   {chaves_migradas}")
         print(f"     Movim.:   {movs_migradas}")

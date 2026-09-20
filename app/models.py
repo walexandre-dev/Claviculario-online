@@ -1,6 +1,8 @@
-from flask_login import UserMixin
-from datetime import datetime, timedelta
 import secrets
+from datetime import datetime, timedelta
+
+from flask_login import UserMixin
+
 from app.extensions import db
 
 
@@ -12,7 +14,7 @@ class Usuario(UserMixin, db.Model):
     email      = db.Column(db.String(100), unique=True, nullable=False)
     senha_hash = db.Column(db.String(256), nullable=False)
     tipo       = db.Column(db.String(20), default='Comum')
-    is_active  = db.Column(db.Boolean, default=False)
+    aprovado   = db.Column(db.Boolean, default=False)
     is_banned  = db.Column(db.Boolean, default=False)
     criado_em  = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -35,8 +37,14 @@ class Usuario(UserMixin, db.Model):
     def is_admin(self):
         return self.tipo == 'Admin'
 
-    # Flask-Login usa is_active para verificar se conta está habilitada
-    # Sobrescrevemos para retornar True sempre (usamos is_active/is_banned separadamente)
+    @property
+    def is_active(self):
+        # Flask-Login usa is_active para decidir se a conta pode autenticar
+        # (is_authenticated depende disso). Aqui só bloqueamos usuários
+        # banidos — "aprovado" é uma condição de negócio separada (acesso ao
+        # painel), tratada nas rotas, e não deve impedir o login em si.
+        return not self.is_banned
+
     def get_id(self):
         return str(self.id)
 

@@ -2,17 +2,12 @@ import re
 import secrets
 from datetime import datetime
 
-from flask import (
-    render_template, request, redirect, url_for,
-    flash, session, current_app
-)
-from flask_login import (
-    login_user, login_required, logout_user, current_user
-)
+from flask import current_app, flash, redirect, render_template, request, session, url_for
+from flask_login import current_user, login_required, login_user, logout_user
 
 from app.auth import bp
 from app.extensions import db
-from app.models import Usuario, SessaoAtiva
+from app.models import SessaoAtiva, Usuario
 
 # ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -97,7 +92,7 @@ def login():
         login_user(user, remember=True)
         _criar_sessao(user)
 
-        if not user.is_active:
+        if not user.aprovado:
             return redirect(url_for('auth.aguardando_aprovacao'))
 
         flash(f'Bem-vindo de volta, {user.nome.split()[0]}! 👋', 'success')
@@ -160,7 +155,7 @@ def registrar():
             nome=nome,
             email=email,
             tipo='Comum',
-            is_active=False  # Aguarda aprovação do admin
+            aprovado=False  # Aguarda aprovação do admin
         )
         novo.set_password(senha)
         db.session.add(novo)
@@ -175,7 +170,7 @@ def registrar():
 @bp.route('/aguardando-aprovacao')
 @login_required
 def aguardando_aprovacao():
-    if current_user.is_active:
+    if current_user.aprovado:
         return redirect(url_for('chaves.index'))
     return render_template('auth/aguardando_aprovacao.html')
 
@@ -183,7 +178,7 @@ def aguardando_aprovacao():
 @bp.route('/minhas-sessoes')
 @login_required
 def minhas_sessoes():
-    if not current_user.is_active:
+    if not current_user.aprovado:
         return redirect(url_for('auth.aguardando_aprovacao'))
 
     token_atual = session.get('auth_token')
