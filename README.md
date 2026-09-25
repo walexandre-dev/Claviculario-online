@@ -66,39 +66,40 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-3. Instale dependências:
+3. Instale dependências (use `requirements-dev.txt` se for rodar testes/lint):
 
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+# ou, para desenvolvimento:
+python -m pip install -r requirements-dev.txt
 ```
 
 ## 🛠️ Configuração Básica
 
-Edite `config.py` conforme seu ambiente:
+Toda a configuração vem de variáveis de ambiente (nunca de valores fixos no código). Copie o arquivo de exemplo e ajuste:
 
-```python
-class Config:
-    SECRET_KEY = 'mudar_esta_chave'  # use variável de ambiente em produção
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    MAX_SESSOES_POR_USUARIO = 10
+```bash
+cp .env.example .env
 ```
 
-Ou configure via variáveis de ambiente:
+Principais variáveis (veja `.env.example` para a lista completa):
 
-```powershell
-setx FLASK_APP run.py
-setx SECRET_KEY 'secreta'
-setx DATABASE_URL 'sqlite:///app.db'
-```
+- `SECRET_KEY` — obrigatória fora do modo debug. Gere uma com:
+  `python -c "import secrets; print(secrets.token_hex(32))"`
+- `FLASK_DEBUG` — `1` para desenvolvimento local (nunca em produção).
+- `DATABASE_URL` — string de conexão (padrão: SQLite local).
+- `MAX_SESSOES_POR_USUARIO` — limite de sessões simultâneas por usuário.
+- `SESSION_COOKIE_SECURE` — defina `1` quando a aplicação rodar atrás de HTTPS.
+
+Sem `SECRET_KEY` definida e sem `FLASK_DEBUG=1`, a aplicação falha ao subir com um erro claro, em vez de usar uma chave padrão insegura.
 
 ## ▶️ Como Executar
 
 1. Inicie a base de dados e dados iniciais (rodar uma única vez):
 
 ```bash
-python run.py
+FLASK_DEBUG=1 python run.py
 ```
 
 Acesse no navegador:
@@ -127,7 +128,17 @@ Após `/setup`, ficam disponíveis:
 - `/admin/usuarios` → gerenciamento Admin de usuários
 - `/setup` → inicializa banco e dados de exemplo
 
-## 🧪 Testes e Verificações
+## 🧪 Testes e Lint
+
+Suíte automatizada com pytest e lint com ruff (ambos rodam no CI a cada push/PR):
+
+```bash
+python -m pip install -r requirements-dev.txt
+pytest -q
+ruff check .
+```
+
+Roteiro manual complementar:
 
 - Login como Admin e Comum
 - Aprovar/Rejeitar/banir usuários
@@ -138,10 +149,12 @@ Após `/setup`, ficam disponíveis:
 
 ## ❗ Dicas de Operação
 
-- Use senha forte e variáveis de ambiente em produção.
-- Não deixe `SECRET_KEY` pública.
+- Use senha forte e variáveis de ambiente em produção (veja `.env.example`).
+- Não deixe `SECRET_KEY` pública nem versionada no `.env`.
 - Use banco PostgreSQL/MySQL se for ambiente que não seja local.
 - Se usar SQLite, garanta permissão de escrita em `app.db`.
+- Nunca rode com `FLASK_DEBUG=1` em produção (expõe o debugger interativo do Werkzeug, que permite execução remota de código).
+- Não use o servidor de desenvolvimento do Flask (`python run.py`) em produção; sirva a aplicação com um WSGI server, ex.: `gunicorn -w 4 run:app`.
 
 ## 🛑 Problemas Comuns
 

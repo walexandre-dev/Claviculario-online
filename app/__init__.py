@@ -1,16 +1,26 @@
-from flask import Flask, session, g
+from flask import Flask, session
+
+from app.extensions import csrf, db, limiter, login_manager
 from config import Config
-from app.extensions import db, login_manager, csrf
 
 
 def create_app(config_class=Config):
     app = Flask(__name__, template_folder='../templates')
     app.config.from_object(config_class)
 
+    if not app.config.get('SECRET_KEY'):
+        raise RuntimeError(
+            'SECRET_KEY não definida. Copie .env.example para .env e defina '
+            'uma chave forte, ou exporte a variável de ambiente SECRET_KEY. '
+            '(Em desenvolvimento, defina FLASK_DEBUG=1 para usar uma chave '
+            'padrão.)'
+        )
+
     # Inicializar extensões
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    limiter.init_app(app)
 
     # Registrar blueprints
     from app.auth import bp as auth_bp
@@ -30,9 +40,11 @@ def create_app(config_class=Config):
         return db.session.get(Usuario, int(user_id))
 
     # Verificar token de sessão a cada request
-    from flask_login import current_user, logout_user
-    from app.models import SessaoAtiva
     from datetime import datetime
+
+    from flask_login import current_user, logout_user
+
+    from app.models import SessaoAtiva
 
     @app.before_request
     def verificar_token_sessao():
@@ -55,7 +67,6 @@ def create_app(config_class=Config):
                 return
 
             # Atualizar último acesso (a cada 60s para não sobrecarregar o DB)
-            from datetime import timedelta
             if not sessao.ultimo_acesso or \
                (datetime.utcnow() - sessao.ultimo_acesso).total_seconds() > 60:
                 sessao.ultimo_acesso = datetime.utcnow()
@@ -78,14 +89,14 @@ def create_app(config_class=Config):
                 email='admin@escola.com',
                 senha_hash=generate_password_hash('Admin@123'),
                 tipo='Admin',
-                is_active=True
+                aprovado=True
             )
             user = Usuario(
                 nome='João Silva',
                 email='joao@escola.com',
                 senha_hash=generate_password_hash('Joao@123'),
                 tipo='Comum',
-                is_active=True
+                aprovado=True
             )
             db.session.add_all([admin, user])
 
@@ -99,7 +110,6 @@ def create_app(config_class=Config):
             db.session.add_all(chaves)
 
         db.session.commit()
-        from flask import jsonify
         return (
             '<h2>✅ Banco criado com sucesso!</h2>'
             '<p>Admin: admin@escola.com / Admin@123</p>'
