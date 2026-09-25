@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import flash, make_response, redirect, render_template, request, url_for
+from flask import current_app, flash, make_response, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.chaves import bp
@@ -215,5 +215,8 @@ def exportar_pdf():
         response.headers['Content-Disposition'] = f'attachment; filename={filename}'
         return response
 
-    except Exception as e:
-        return str(e), 500
+    except Exception:
+        # Loga o stack trace no servidor, mas nunca expõe detalhes internos
+        # (caminhos, mensagens de driver do banco, etc.) para o cliente.
+        current_app.logger.exception('Falha ao gerar relatório PDF')
+        return 'Não foi possível gerar o relatório. Tente novamente.', 500

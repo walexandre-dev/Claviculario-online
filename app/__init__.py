@@ -1,6 +1,6 @@
 from flask import Flask, session
 
-from app.extensions import csrf, db, login_manager
+from app.extensions import csrf, db, limiter, login_manager
 from config import Config
 
 
@@ -20,6 +20,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    limiter.init_app(app)
 
     # Registrar blueprints
     from app.auth import bp as auth_bp

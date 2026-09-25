@@ -36,6 +36,11 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
 
+    # Limite de tamanho do corpo da requisição (1 MB): nenhuma rota do app
+    # espera upload de arquivo, então isso barra corpos anormalmente grandes
+    # (ex.: um campo de formulário gigante) antes de chegarem às views.
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', str(1024 * 1024)))
+
 
 class TestConfig(Config):
     """Configuração usada pela suíte de testes (tests/conftest.py)."""
@@ -50,3 +55,6 @@ class TestConfig(Config):
     }
     WTF_CSRF_ENABLED = False
     TESTING = True
+    # Evita que os testes esbarrem no rate limit do login/registro ao
+    # rodar vários casos seguidos contra o mesmo client de teste.
+    RATELIMIT_ENABLED = False

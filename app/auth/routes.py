@@ -6,13 +6,15 @@ from flask import current_app, flash, redirect, render_template, request, sessio
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.auth import bp
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import SessaoAtiva, Usuario
 
 # ─── Helpers ───────────────────────────────────────────────────────────────
 
 EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
-SENHA_RE = re.compile(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$')  # mín 8 chars, letra + número
+# mín 8, máx 128 chars, letra + número (o teto evita hash de senhas
+# absurdamente grandes, que custaria CPU sem necessidade)
+SENHA_RE = re.compile(r'^(?=.*[A-Za-z])(?=.*\d).{8,128}$')
 
 
 def _get_ip():
@@ -70,6 +72,7 @@ def _limpar_sessoes_expiradas(usuario_id):
 # ─── Rotas ────────────────────────────────────────────────────────────────
 
 @bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit('10 per minute')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('chaves.index'))
@@ -119,6 +122,7 @@ def logout():
 
 
 @bp.route('/registrar', methods=['GET', 'POST'])
+@limiter.limit('5 per hour')
 def registrar():
     if current_user.is_authenticated:
         return redirect(url_for('chaves.index'))
