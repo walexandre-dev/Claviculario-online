@@ -154,7 +154,7 @@ class RelatorioPDF(FPDF):
 
 def _safe(text):
     if not text:
-        return '—'
+        return '-'
     return str(text).encode('latin-1', 'replace').decode('latin-1')
 
 
@@ -190,8 +190,8 @@ def gerar_relatorio_pdf(movimentacoes, periodo_texto='Histórico Completo'):
         for idx, mov in enumerate(movimentacoes):
             chave_nome = _safe(mov.chave.nome if mov.chave else 'Chave Excluida')
             usuario    = _safe(mov.usuario_nome or 'Desconhecido')
-            data_ret   = mov.data_retirada.strftime('%d/%m/%Y') if mov.data_retirada else '—'
-            hora_ret   = mov.data_retirada.strftime('%H:%M')    if mov.data_retirada else '—'
+            data_ret   = mov.data_retirada.strftime('%d/%m/%Y') if mov.data_retirada else '-'
+            hora_ret   = mov.data_retirada.strftime('%H:%M')    if mov.data_retirada else '-'
             if mov.data_devolucao:
                 data_dev = mov.data_devolucao.strftime('%d/%m/%Y')
                 hora_dev = mov.data_devolucao.strftime('%H:%M')
@@ -204,7 +204,7 @@ def gerar_relatorio_pdf(movimentacoes, periodo_texto='Histórico Completo'):
                     dur = f'{tot_min // 1440}d {(tot_min % 1440) // 60}h'
                 status = 'CONCLUIDO'
             else:
-                data_dev = hora_dev = '—'
+                data_dev = hora_dev = '-'
                 dur, status = 'Em aberto', 'EM ABERTO'
 
             pdf.table_row(
