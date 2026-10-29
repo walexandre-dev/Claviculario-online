@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+# Conjunto pragmático: erros/pyflakes, estilo pycodestyle, imports (isort) e
+# pyupgrade. Regras mais opinativas (datetime timezone-aware, except genérico,
+# etc.) ficam de fora por ora para não exigir uma reescrita ampla só para
+# habilitar o lint no CI.
+select = ["E", "F", "I", "W", "UP"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

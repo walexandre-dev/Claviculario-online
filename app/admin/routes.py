@@ -1,11 +1,11 @@
 from functools import wraps
-from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 from app.admin import bp
 from app.extensions import db
-from app.models import Usuario, SessaoAtiva
-
+from app.models import SessaoAtiva, Usuario
 
 # ─── Decorator admin ──────────────────────────────────────────────────────
 
@@ -14,7 +14,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
-        if not current_user.is_active:
+        if not current_user.aprovado:
             return redirect(url_for('auth.aguardando_aprovacao'))
         if not current_user.is_admin:
             flash('Acesso restrito a administradores.', 'danger')
@@ -29,9 +29,9 @@ def admin_required(f):
 @login_required
 @admin_required
 def usuarios():
-    pendentes = Usuario.query.filter_by(is_active=False, is_banned=False)\
+    pendentes = Usuario.query.filter_by(aprovado=False, is_banned=False)\
         .order_by(Usuario.criado_em.asc()).all()
-    ativos = Usuario.query.filter_by(is_active=True, is_banned=False)\
+    ativos = Usuario.query.filter_by(aprovado=True, is_banned=False)\
         .order_by(Usuario.criado_em.desc()).all()
     banidos = Usuario.query.filter_by(is_banned=True)\
         .order_by(Usuario.criado_em.desc()).all()
@@ -52,7 +52,7 @@ def aprovar_usuario(user_id):
     if not user:
         flash('Usuário não encontrado.', 'danger')
         return redirect(url_for('admin.usuarios'))
-    user.is_active = True
+    user.aprovado = True
     user.is_banned = False
     db.session.commit()
     flash(f'Usuário "{user.nome}" aprovado com sucesso! ✅', 'success')
@@ -85,7 +85,7 @@ def banir_usuario(user_id):
     if user.id == current_user.id:
         flash('Você não pode banir a si mesmo.', 'danger')
         return redirect(url_for('admin.usuarios'))
-    user.is_active = False
+    user.aprovado = False
     user.is_banned = True
     # Revogar todas as sessões
     SessaoAtiva.query.filter_by(usuario_id=user.id).delete()
@@ -103,7 +103,7 @@ def desbanir_usuario(user_id):
         flash('Usuário não encontrado.', 'danger')
         return redirect(url_for('admin.usuarios'))
     user.is_banned = False
-    user.is_active = False  # Volta para pendente — admin reaprova
+    user.aprovado = False  # Volta para pendente — admin reaprova
     db.session.commit()
     flash(f'Usuário "{user.nome}" desbanido. Precisa ser reaprovado.', 'info')
     return redirect(url_for('admin.usuarios'))
@@ -129,7 +129,7 @@ def novo_usuario():
             flash('Já existe um usuário com este e-mail.', 'danger')
             return redirect(url_for('admin.novo_usuario'))
 
-        novo = Usuario(nome=nome, email=email, tipo=tipo, is_active=True)
+        novo = Usuario(nome=nome, email=email, tipo=tipo, aprovado=True)
         novo.set_password(senha)
         db.session.add(novo)
         db.session.commit()
